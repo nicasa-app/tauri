@@ -434,10 +434,8 @@ impl From<&WindowConfig> for WebviewAttributes {
         _ => ScrollBarStyle::Default,
       });
 
-    #[cfg(any(not(target_os = "macos"), feature = "macos-private-api"))]
-    {
-      builder = builder.transparent(config.transparent);
-    }
+    builder = builder.transparent(config.transparent);
+
     #[cfg(target_os = "macos")]
     {
       if let Some(position) = &config.traffic_light_position {
@@ -636,7 +634,6 @@ impl WebviewAttributes {
   }
 
   /// Enable or disable transparency for the WebView.
-  #[cfg(any(not(target_os = "macos"), feature = "macos-private-api"))]
   #[must_use]
   pub fn transparent(mut self, transparent: bool) -> Self {
     self.transparent = transparent;
