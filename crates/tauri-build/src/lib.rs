@@ -23,6 +23,7 @@ use std::{
   collections::HashMap,
   env, fs,
   path::{Path, PathBuf},
+  sync::Mutex,
 };
 
 mod acl;
@@ -31,6 +32,17 @@ mod codegen;
 mod manifest;
 mod mobile;
 mod static_vcruntime;
+
+static MACOS_CUSTOM_COPY_HOOK: Mutex<Option<Box<dyn Fn(&Path) -> Result<()> + Send + Sync>>> = Mutex::new(None);
+
+/// Sets a global hook for custom copy operations.
+///
+/// Currently supports "custom_copy" for macOS custom copy hook.
+pub fn hook(kind: &str, hook_fn: impl Fn(&Path) -> Result<()> + 'static + Send + Sync) {
+  if kind == "custom_copy" {
+    *MACOS_CUSTOM_COPY_HOOK.lock().unwrap() = Some(Box::new(hook_fn));
+  }
+}
 
 #[cfg(feature = "codegen")]
 #[cfg_attr(docsrs, doc(cfg(feature = "codegen")))]
@@ -337,7 +349,7 @@ impl WindowsAttributes {
 }
 
 /// The attributes used on the build.
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Attributes {
   #[allow(dead_code)]
   windows_attributes: WindowsAttributes,
@@ -346,6 +358,19 @@ pub struct Attributes {
   codegen: Option<codegen::context::CodegenContext>,
   inlined_plugins: HashMap<&'static str, InlinedPlugin>,
   app_manifest: AppManifest,
+  macos_custom_copy_hook: Option<Box<dyn Fn(&Path) -> Result<()>>>,
+}
+
+impl std::fmt::Debug for Attributes {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    f.debug_struct("Attributes")
+      .field("windows_attributes", &self.windows_attributes)
+      .field("capabilities_path_pattern", &self.capabilities_path_pattern)
+      .field("inlined_plugins", &self.inlined_plugins)
+      .field("app_manifest", &self.app_manifest)
+      .field("macos_custom_copy_hook", &self.macos_custom_copy_hook.as_ref().map(|_| "<hook>"))
+      .finish()
+  }
 }
 
 impl Attributes {
@@ -401,6 +426,19 @@ impl Attributes {
     self
   }
 
+  /// Sets a custom copy hook for macOS builds.
+  ///
+  /// The hook function receives the target directory path and can perform custom copying operations,
+  /// such as copying app extensions to Contents/PlugIns.
+  #[must_use]
+  pub fn macos_custom_copy_hook<F>(mut self, hook: F) -> Self
+  where
+    F: Fn(&Path) -> Result<()> + 'static,
+  {
+    self.macos_custom_copy_hook = Some(Box::new(hook));
+    self
+  }
+
   #[cfg(feature = "codegen")]
   #[cfg_attr(docsrs, doc(cfg(feature = "codegen")))]
   #[must_use]
@@ -438,7 +476,12 @@ pub fn is_dev() -> bool {
 ///
 /// [conditional compilation]: https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/first-edition/conditional-compilation.html
 pub fn build() {
-  if let Err(error) = try_build(Attributes::default()) {
+  let hook = MACOS_CUSTOM_COPY_HOOK.lock().unwrap().take();
+  let mut attributes = Attributes::default();
+  if let Some(h) = hook {
+    attributes.macos_custom_copy_hook = Some(h);
+  }
+  if let Err(error) = try_build(attributes) {
     let error = format!("{error:#}");
     println!("{error}");
     if error.starts_with("unknown field") {
@@ -567,6 +610,11 @@ pub fn try_build(attributes: Attributes) -> Result<()> {
         // https://github.com/tauri-apps/tauri/issues/7710
         println!("cargo:rustc-link-arg=-Wl,-rpath,@executable_path/../Frameworks");
       }
+    }
+
+    // Call custom copy hook if provided
+    if let Some(ref hook) = attributes.macos_custom_copy_hook {
+      hook(target_dir)?;
     }
 
     if !is_dev() {
