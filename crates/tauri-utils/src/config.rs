@@ -615,6 +615,10 @@ pub struct MacConfig {
   ///
   /// If a name is used, ".framework" must be omitted and it will look for standard install locations. You may also use a path to a specific framework.
   pub frameworks: Option<Vec<String>>,
+  /// A list of strings indicating any macOS app extensions (appex) that need to be bundled with the application.
+  ///
+  /// Each entry should be a path to the .appex bundle.
+  pub plugins: Option<Vec<String>>,
   /// The files to include in the application relative to the Contents directory.
   #[serde(default)]
   pub files: HashMap<PathBuf, PathBuf>,
@@ -673,6 +677,7 @@ impl Default for MacConfig {
   fn default() -> Self {
     Self {
       frameworks: None,
+      plugins: None,
       files: HashMap::new(),
       bundle_version: None,
       bundle_name: None,

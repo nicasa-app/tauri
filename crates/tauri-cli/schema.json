@@ -2858,6 +2858,16 @@
             "type": "string"
           }
         },
+        "plugins": {
+          "description": "A list of strings indicating any macOS app extensions (appex) that need to be bundled with the application.\n\n Each entry should be a path to the .appex bundle.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
         "files": {
           "description": "The files to include in the application relative to the Contents directory.",
           "default": {},

@@ -86,6 +86,10 @@ pub fn bundle_project(settings: &Settings) -> crate::Result<Vec<PathBuf>> {
     .with_context(|| "Failed to bundle frameworks")?;
   sign_paths.extend(framework_paths);
 
+  let plugin_paths = copy_plugins_to_bundle(&bundle_directory, settings)
+    .with_context(|| "Failed to bundle plugins")?;
+  sign_paths.extend(plugin_paths);
+
   settings.copy_resources(&resources_dir)?;
 
   let bin_paths = settings
@@ -595,6 +599,42 @@ fn add_nested_code_sign_path(src_path: &Path, dest_path: &Path, sign_paths: &mut
       }
     }
   }
+}
+
+fn copy_plugins_to_bundle(
+  bundle_directory: &Path,
+  settings: &Settings,
+) -> crate::Result<Vec<SignTarget>> {
+  let mut paths = Vec::new();
+
+  let plugins = settings.macos().plugins.clone().unwrap_or_default();
+  if plugins.is_empty() {
+    return Ok(paths);
+  }
+  let dest_dir = bundle_directory.join("PlugIns");
+  fs::create_dir_all(&dest_dir).fs_context("failed to create PlugIns directory", &dest_dir)?;
+  for plugin in plugins.iter() {
+    let src_path = PathBuf::from(plugin);
+    if !src_path.exists() {
+      return Err(GenericError(format!("Plugin not found: {plugin}")));
+    }
+    let src_name = src_path
+      .file_name()
+      .expect("Couldn't get plugin filename");
+    let dest_path = dest_dir.join(src_name);
+    if src_path.is_dir() {
+      fs_utils::copy_dir(&src_path, &dest_path)?;
+      // For appex bundles, add sign path
+      add_executable_bundle_sign_path(&src_path, &dest_path, &mut paths);
+    } else {
+      fs_utils::copy_file(&src_path, &dest_path)?;
+      paths.push(SignTarget {
+        path: dest_path,
+        is_an_executable: false,
+      });
+    }
+  }
+  Ok(paths)
 }
 
 #[cfg(test)]

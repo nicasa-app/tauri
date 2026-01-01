@@ -39,6 +39,7 @@ static MACOS_CUSTOM_COPY_HOOK: Mutex<Option<Box<dyn Fn(&Path) -> Result<()> + Se
 ///
 /// Currently supports "custom_copy" for macOS custom copy hook.
 pub fn hook(kind: &str, hook_fn: impl Fn(&Path) -> Result<()> + 'static + Send + Sync) {
+  println!("cargo:warning=Setting global hook for kind: {}", kind);
   if kind == "custom_copy" {
     *MACOS_CUSTOM_COPY_HOOK.lock().unwrap() = Some(Box::new(hook_fn));
   }
@@ -171,6 +172,7 @@ fn copy_framework_from(src_dir: &Path, framework: &str, dest_dir: &Path) -> Resu
   }
 }
 
+
 // Copies the macOS application bundle frameworks to the target folder
 fn copy_frameworks(dest_dir: &Path, frameworks: &[String]) -> Result<()> {
   fs::create_dir_all(dest_dir)
@@ -208,6 +210,32 @@ fn copy_frameworks(dest_dir: &Path, frameworks: &[String]) -> Result<()> {
       || copy_framework_from("/Network/Library/Frameworks/".as_ref(), framework, dest_dir)?
     {
       continue;
+    }
+  }
+  Ok(())
+}
+
+
+// Copies the macOS application bundle plugins to the target folder
+fn copy_plugins(dest_dir: &Path, plugins: &[String]) -> Result<()> {
+  fs::create_dir_all(dest_dir)
+    .with_context(|| format!("Failed to create plugins output directory at {dest_dir:?}"))?;
+  for plugin in plugins.iter() {
+    let src_path = Path::new(plugin);
+    if src_path.exists() {
+      if src_path.is_dir() {
+        let src_name = src_path
+          .file_name()
+          .expect("Couldn't get plugin filename");
+        let dest_path = dest_dir.join(src_name);
+        copy_dir(src_path, &dest_path)?;
+      } else {
+        let src_name = src_path.file_name().expect("Couldn't get plugin filename");
+        let dest_path = dest_dir.join(src_name);
+        copy_file(src_path, &dest_path)?;
+      }
+    } else {
+      return Err(anyhow::anyhow!("Plugin not found: {}", plugin));
     }
   }
   Ok(())
@@ -612,8 +640,17 @@ pub fn try_build(attributes: Attributes) -> Result<()> {
       }
     }
 
+    if let Some(plugins) = &config.bundle.macos.plugins {
+      if !plugins.is_empty() {
+        let plugins_dir = target_dir.parent().unwrap().join("PlugIns");
+        let _ = fs::remove_dir_all(&plugins_dir);
+        copy_plugins(&plugins_dir, plugins)?;
+      }
+    }
+
     // Call custom copy hook if provided
     if let Some(ref hook) = attributes.macos_custom_copy_hook {
+      println!("cargo:warning=Running macOS custom copy hook");
       hook(target_dir)?;
     }
 

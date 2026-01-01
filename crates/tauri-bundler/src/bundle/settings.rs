@@ -327,6 +327,11 @@ pub struct MacOsSettings {
   ///
   /// - embedding the correct rpath in your binary (e.g. by running `install_name_tool -add_rpath "@executable_path/../Frameworks" path/to/binary` after compiling)
   pub frameworks: Option<Vec<String>>,
+  /// MacOS app extensions (plugins) that need to be bundled with the app.
+  ///
+  /// Each string should be a path to a .appex bundle (e.g. `./extensions/MyExtension.appex`).
+  /// The plugins will be copied to `Contents/PlugIns/` in the app bundle.
+  pub plugins: Option<Vec<String>>,
   /// List of custom files to add to the application bundle.
   /// Maps the path in the Contents directory in the app to the path of the file to include (relative to the current working directory).
   pub files: HashMap<PathBuf, PathBuf>,

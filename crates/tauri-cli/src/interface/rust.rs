@@ -1554,6 +1554,7 @@ fn tauri_config_to_bundle_settings(
     },
     macos: MacOsSettings {
       frameworks: config.macos.frameworks,
+      plugins: config.macos.plugins,
       files: config.macos.files,
       bundle_version: config.macos.bundle_version,
       bundle_name: config.macos.bundle_name,
