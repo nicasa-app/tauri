@@ -1180,6 +1180,30 @@ impl WindowBuilder for WindowBuilderWrapper {
     self
   }
 
+  #[cfg(target_os = "macos")]
+  fn style_mask(mut self, style_mask: usize) -> Self {
+    self.inner = self.inner.with_style_mask(style_mask);
+    self
+  }
+
+  #[cfg(target_os = "macos")]
+  fn level(mut self, level: i64) -> Self {
+    self.inner = self.inner.with_level(level);
+    self
+  }
+
+  #[cfg(target_os = "macos")]
+  fn collection_behavior(mut self, collection_behavior: usize) -> Self {
+    self.inner = self.inner.with_collection_behavior(collection_behavior);
+    self
+  }
+
+  #[cfg(target_os = "macos")]
+  fn fullscreen_frame(mut self, fullscreen_frame: bool) -> Self {
+    self.inner = self.inner.with_fullscreen_frame(fullscreen_frame);
+    self
+  }
+
   fn icon(mut self, icon: Icon) -> Result<Self> {
     self.inner = self
       .inner

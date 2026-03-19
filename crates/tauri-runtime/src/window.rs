@@ -461,6 +461,22 @@ pub trait WindowBuilder: WindowBuilderBase {
   #[must_use]
   fn tabbing_identifier(self, identifier: &str) -> Self;
 
+  /// Sets the window style mask.
+  #[cfg(target_os = "macos")]
+  fn style_mask(self, style_mask: usize) -> Self;
+
+  /// Sets the window level.
+  #[cfg(target_os = "macos")]
+  fn level(self, level: i64) -> Self;
+
+  /// Sets the window collection behavior.
+  #[cfg(target_os = "macos")]
+  fn collection_behavior(self, collection_behavior: usize) -> Self;
+
+  /// Sets the window frame to fullscreen.
+  #[cfg(target_os = "macos")]
+  fn fullscreen_frame(self, fullscreen_frame: bool) -> Self;
+
   /// Forces a theme or uses the system settings if None was provided.
   fn theme(self, theme: Option<Theme>) -> Self;
 
