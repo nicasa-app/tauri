@@ -894,6 +894,34 @@ impl<'a, R: Runtime, M: Manager<R>> WebviewWindowBuilder<'a, R, M> {
     self.window_builder = self.window_builder.effects(effects);
     self
   }
+
+  /// Sets the window style mask.
+  #[cfg(target_os = "macos")]
+  pub fn style_mask(mut self, style_mask: usize) -> Self {
+    self.window_builder = self.window_builder.style_mask(style_mask);
+    self
+  }
+
+  /// Sets the window level.
+  #[cfg(target_os = "macos")]
+  pub fn level(mut self, level: i64) -> Self {
+    self.window_builder = self.window_builder.level(level);
+    self
+  }
+
+  /// Sets the window collection behavior.
+  #[cfg(target_os = "macos")]
+  pub fn collection_behavior(mut self, collection_behavior: usize) -> Self {
+    self.window_builder = self.window_builder.collection_behavior(collection_behavior);
+    self
+  }
+
+  /// Sets the window frame to fullscreen.
+  #[cfg(target_os = "macos")]
+  pub fn fullscreen_frame(mut self, fullscreen_frame: bool) -> Self {
+    self.window_builder = self.window_builder.fullscreen_frame(fullscreen_frame);
+    self
+  }
 }
 
 /// Webview attributes.
