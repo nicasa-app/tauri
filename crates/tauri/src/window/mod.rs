@@ -553,32 +553,6 @@ impl<'a, R: Runtime, M: Manager<R>> WindowBuilder<'a, R, M> {
     self
   }
 
-  /// Whether the window should be immediately visible upon creation.
-  #[must_use]
-  pub fn visible(mut self, visible: bool) -> Self {
-    self.window_builder = self.window_builder.visible(visible);
-    self
-  }
-
-  /// Forces a theme or uses the system settings if None was provided.
-  ///
-  /// ## Platform-specific
-  ///
-  /// - **macOS**: Only supported on macOS 10.14+.
-  #[must_use]
-  pub fn theme(mut self, theme: Option<Theme>) -> Self {
-    self.window_builder = self.window_builder.theme(theme);
-    self
-  }
-
-  /// Whether the window should be transparent. If this is true, writing colors
-  /// with alpha values different than `1.0` will produce a transparent window.
-  #[must_use]
-  pub fn transparent(mut self, transparent: bool) -> Self {
-    self.window_builder = self.window_builder.transparent(transparent);
-    self
-  }
-
   /// Whether the window should have borders and bars.
   #[must_use]
   pub fn decorations(mut self, decorations: bool) -> Self {
